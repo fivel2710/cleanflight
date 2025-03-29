@@ -133,11 +133,11 @@ typedef struct ledCounts_s {
 } ledCounts_t;
 
 
-ledConfig_t *ledConfigs;
-struct hsvColor_s;
-struct hsvColor_s *colors;
-modeColorIndexes_t *modeColors;
-specialColorIndexes_t specialColors;
+extern ledConfig_t *ledConfigs;
+extern struct hsvColor_s;
+extern struct hsvColor_s *colors;
+extern modeColorIndexes_t *modeColors;
+extern specialColorIndexes_t specialColors;
 
 #define DEFINE_LED(x, y, col, dir, func, ol, params) (LED_MOV_POS(CALCULATE_LED_XY(x, y)) | LED_MOV_COLOR(col) | LED_MOV_DIRECTION(dir) | LED_MOV_FUNCTION(func) | LED_MOV_OVERLAY(ol) | LED_MOV_PARAMS(params))
 

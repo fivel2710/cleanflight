@@ -89,6 +89,8 @@
 static uint8_t escCount;
 uint8_t escSelected;
 
+bool esc4wayExitRequested;     // flag that exit was requested. Set by esc4wayProcessCmd, used internally by esc4wayProcess
+
 escHardware_t escHardware[MAX_PWM_MOTORS];
 
 static escDeviceInfo_t deviceInfo;

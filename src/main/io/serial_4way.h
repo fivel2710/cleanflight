@@ -126,8 +126,6 @@ typedef struct escDeviceInfo_s {
     uint8_t interfaceMode;
 } escDeviceInfo_t;
 
-bool esc4wayExitRequested;     // flag that exit was requested. Set by esc4wayProcessCmd, used internally by esc4wayProcess
-
 int esc4wayInit(void);
 void esc4wayStart(void);
 void esc4wayRelease(void);
