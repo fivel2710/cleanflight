@@ -92,11 +92,11 @@ static uint8_t payloadSize;
 //#define CRC_LEN 2
 #define RX_TX_ADDR_LEN     5
 //STATIC_UNIT_TESTED uint8_t txAddr[RX_TX_ADDR_LEN] = {0x55, 0x0F, 0x71, 0x0C, 0x00}; // converted XN297 address, 0xC710F55 (28 bit)
-STATIC_UNIT_TESTED uint8_t rxAddr[RX_TX_ADDR_LEN] = {0x71, 0xCD, 0xAB, 0xCD, 0xAB}; // converted XN297 address
+STATIC_UNIT_TESTED uint8_t rxAddr[RX_TX_ADDR_LEN] = {0x55, 0x55, 0x55, 0x55, 0x55}; // converted XN297 address
 //#define TX_ID_LEN 4
 //STATIC_UNIT_TESTED uint8_t txId[TX_ID_LEN];
 
-#define CX10_RF_BIND_CHANNEL           0x0
+#define CX10_RF_BIND_CHANNEL           76
 #define RF_CHANNEL_COUNT 1
 STATIC_UNIT_TESTED uint8_t cx10RfChannelIndex = 0;
 STATIC_UNIT_TESTED uint8_t cx10RfChannels[RF_CHANNEL_COUNT]; // channels are set using txId from bind packet
@@ -129,23 +129,28 @@ static uint32_t timeOfLastHop;
 //    return ret;
 //}
 
-long map(uint8_t x, uint8_t in_min, uint8_t in_max, uint8_t out_min, uint8_t out_max) {
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+uint16_t map(uint8_t x, uint8_t in_min, uint8_t in_max, uint16_t out_min, uint16_t out_max) {
+    return (uint16_t)(((long)x - (long)in_min) * ((long)out_max - (long)out_min) / ((long)in_max - (long)in_min) + (long)out_min);
 }
 
 void cx10Nrf24SetRcDataFromPayload(uint16_t *rcData, const uint8_t *payload)
 {
+
     const uint8_t offset = 0; //(cx10Protocol == NRF24RX_CX10) ? 0 : 4;
-    rcData[RC_SPI_ROLL] = map(&payload[1 + offset], 0, 255, PWM_RANGE_MAX, PWM_RANGE_MIN); //(PWM_RANGE_MAX + PWM_RANGE_MIN) - cx10ConvertToPwmUnsigned(&payload[5 + offset]);  // aileron
-    rcData[RC_SPI_PITCH] = map(&payload[2 + offset],    0, 255, PWM_RANGE_MIN, PWM_RANGE_MAX); //(PWM_RANGE_MAX + PWM_RANGE_MIN) - cx10ConvertToPwmUnsigned(&payload[7 + offset]); // elevator
     rcData[RC_SPI_THROTTLE] = map(&payload[0 + offset], 0, 255, PWM_RANGE_MIN, PWM_RANGE_MAX); // cx10ConvertToPwmUnsigned(&payload[9 + offset]); // throttle
+    rcData[RC_SPI_ROLL] = map(&payload[1 + offset], 0, 255, PWM_RANGE_MIN, PWM_RANGE_MAX); //(PWM_RANGE_MAX + PWM_RANGE_MIN) - cx10ConvertToPwmUnsigned(&payload[5 + offset]);  // aileron
+    rcData[RC_SPI_PITCH] = map(&payload[2 + offset],    0, 255, PWM_RANGE_MIN, PWM_RANGE_MAX); //(PWM_RANGE_MAX + PWM_RANGE_MIN) - cx10ConvertToPwmUnsigned(&payload[7 + offset]); // elevator
     rcData[RC_SPI_YAW] = map(&payload[3 + offset], 0, 255, PWM_RANGE_MIN, PWM_RANGE_MAX); //cx10ConvertToPwmUnsigned(&payload[11 + offset]);  // rudder
+
+//    addBootlogEvent6(BOOT_EVENT_NRF_DETECTION, BOOT_EVENT_FLAGS_NONE, payload[0], payload[1], rcData[RC_SPI_THROTTLE], rcData[RC_SPI_ROLL]);
+
+
 //    const uint8_t flags1 = payload[13 + offset];
 //    const uint8_t rate = flags1 & FLAG_MODE_MASK; // takes values 0, 1, 2
 //    if (rate == RATE_LOW) {
-        rcData[RC_CHANNEL_RATE] = PWM_RANGE_MIN;
+//        rcData[RC_CHANNEL_RATE] = PWM_RANGE_MIN;
 //    } else if (rate == RATE_MID) {
-//        rcData[RC_CHANNEL_RATE] = PWM_RANGE_MIDDLE;
+        rcData[RC_CHANNEL_RATE] = PWM_RANGE_MIDDLE;
 //    } else {
 //        rcData[RC_CHANNEL_RATE] = PWM_RANGE_MAX;
 //    }
@@ -163,7 +168,7 @@ static void cx10HopToNextChannel(void)
     if (cx10RfChannelIndex >= RF_CHANNEL_COUNT) {
         cx10RfChannelIndex = 0;
     }
-    NRF24L01_SetChannel(0/* cx10RfChannels[cx10RfChannelIndex] */);
+//    NRF24L01_SetChannel(CX10_RF_BIND_CHANNEL/* cx10RfChannels[cx10RfChannelIndex] */);
 }
 
 // The hopping channels are determined by the txId
@@ -197,8 +202,6 @@ static bool cx10ReadPayloadIfAvailable(uint8_t *payload)
     }
     return false;
 }
-
-bool readFirstPayload = false;
 
 /*
  * This is called periodically by the scheduler.
@@ -267,16 +270,11 @@ rx_spi_received_e cx10Nrf24DataReceived(uint8_t *payload)
         timeNowUs = micros();
         // read the payload, processing of payload is deferred
         if (cx10ReadPayloadIfAvailable(payload)) {
-			if (!readFirstPayload) {
-				readFirstPayload = true;
-				spiErrorCounter = spiGetErrorCounter(RX_SPI_INSTANCE);
-				addBootlogEvent6(BOOT_EVENT_NRF_DETECTION, BOOT_EVENT_FLAGS_NONE, 1, (uint16_t)(RX_SPI_INSTANCE == SPI1), spiErrorCounter, 0);
-			}
-			
             cx10HopToNextChannel();
             timeOfLastHop = timeNowUs;
             ret = RX_SPI_RECEIVED_DATA;
-        }
+        }	
+
         if (timeNowUs > timeOfLastHop + hopTimeout) {
             cx10HopToNextChannel();
             timeOfLastHop = timeNowUs;
@@ -291,15 +289,15 @@ static void cx10Nrf24Setup(rx_spi_protocol_e protocol)
 	
     cx10Protocol = protocol;
     protocolState = STATE_DATA; //STATE_BIND;
-    payloadSize = (protocol == NRF24RX_CX10) ? CX10_PROTOCOL_PAYLOAD_SIZE : CX10A_PROTOCOL_PAYLOAD_SIZE;
-    hopTimeout = (protocol == NRF24RX_CX10) ? CX10_PROTOCOL_HOP_TIMEOUT : CX10A_PROTOCOL_HOP_TIMEOUT;
+    payloadSize = 6;// (protocol == NRF24RX_CX10) ? CX10_PROTOCOL_PAYLOAD_SIZE : CX10A_PROTOCOL_PAYLOAD_SIZE;
+    hopTimeout = 20000; // (protocol == NRF24RX_CX10) ? CX10_PROTOCOL_HOP_TIMEOUT : CX10A_PROTOCOL_HOP_TIMEOUT;
 
     NRF24L01_Initialize(0); // sets PWR_UP, no CRC
     NRF24L01_SetupBasic();
 
     NRF24L01_SetChannel(CX10_RF_BIND_CHANNEL);
 
-    NRF24L01_WriteReg(NRF24L01_06_RF_SETUP, NRF24L01_06_RF_SETUP_RF_DR_1Mbps | NRF24L01_06_RF_SETUP_RF_PWR_n12dbm);
+    NRF24L01_WriteReg(NRF24L01_06_RF_SETUP, NRF24L01_06_RF_SETUP_RF_DR_250Kbps | NRF24L01_06_RF_SETUP_RF_PWR_n12dbm);
     // RX_ADDR for pipes P2 to P5 are left at default values
     NRF24L01_FlushRx();
 //    NRF24L01_WriteRegisterMulti(NRF24L01_10_TX_ADDR, txAddr, RX_TX_ADDR_LEN);
@@ -308,10 +306,6 @@ static void cx10Nrf24Setup(rx_spi_protocol_e protocol)
     NRF24L01_WriteReg(NRF24L01_11_RX_PW_P0, payloadSize /* + CRC_LEN */); // payload + 2 bytes CRC
 
     NRF24L01_SetRxMode(); // enter receive mode to start listening for packets
-
-	readFirstPayload = false;
-	spiErrorCounter = spiGetErrorCounter(RX_SPI_INSTANCE);;
-    addBootlogEvent6(BOOT_EVENT_NRF_DETECTION, BOOT_EVENT_FLAGS_NONE, 0, (uint16_t)(RX_SPI_INSTANCE == SPI1), spiErrorCounter, 0);
 }
 
 void cx10Nrf24Init(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
