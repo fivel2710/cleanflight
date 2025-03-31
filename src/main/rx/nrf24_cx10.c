@@ -26,12 +26,14 @@
 #include "build/build_config.h"
 
 #include "drivers/logging.h"
+#include "drivers/bus_spi.h"
 
 #ifdef USE_RX_CX10
 
 #include "drivers/rx_nrf24l01.h"
 #include "drivers/rx_xn297.h"
 #include "drivers/system.h"
+
 
 #include "rx/rx_spi.h"
 #include "rx/nrf24_cx10.h"
@@ -196,6 +198,8 @@ static bool cx10ReadPayloadIfAvailable(uint8_t *payload)
     return false;
 }
 
+bool readFirstPayload = false;
+
 /*
  * This is called periodically by the scheduler.
  * Returns RX_SPI_RECEIVED_DATA if a data packet was received.
@@ -206,6 +210,7 @@ rx_spi_received_e cx10Nrf24DataReceived(uint8_t *payload)
     rx_spi_received_e ret = RX_SPI_RECEIVED_NONE;
     int totalDelayUs;
     uint32_t timeNowUs;
+	uint16_t spiErrorCounter;
 
     switch (protocolState) {
  //   case STATE_BIND:
@@ -262,6 +267,12 @@ rx_spi_received_e cx10Nrf24DataReceived(uint8_t *payload)
         timeNowUs = micros();
         // read the payload, processing of payload is deferred
         if (cx10ReadPayloadIfAvailable(payload)) {
+			if (!readFirstPayload) {
+				readFirstPayload = true;
+				spiErrorCounter = spiGetErrorCounter(RX_SPI_INSTANCE);
+				addBootlogEvent6(BOOT_EVENT_NRF_DETECTION, BOOT_EVENT_FLAGS_NONE, 1, (uint16_t)(RX_SPI_INSTANCE == SPI1), spiErrorCounter, 0);
+			}
+			
             cx10HopToNextChannel();
             timeOfLastHop = timeNowUs;
             ret = RX_SPI_RECEIVED_DATA;
@@ -276,6 +287,8 @@ rx_spi_received_e cx10Nrf24DataReceived(uint8_t *payload)
 
 static void cx10Nrf24Setup(rx_spi_protocol_e protocol)
 {
+	uint16_t spiErrorCounter;
+	
     cx10Protocol = protocol;
     protocolState = STATE_DATA; //STATE_BIND;
     payloadSize = (protocol == NRF24RX_CX10) ? CX10_PROTOCOL_PAYLOAD_SIZE : CX10A_PROTOCOL_PAYLOAD_SIZE;
@@ -296,7 +309,9 @@ static void cx10Nrf24Setup(rx_spi_protocol_e protocol)
 
     NRF24L01_SetRxMode(); // enter receive mode to start listening for packets
 
-    addBootlogEvent2(BOOT_EVENT_NRF_DETECTION, BOOT_EVENT_FLAGS_NONE);
+	readFirstPayload = false;
+	spiErrorCounter = spiGetErrorCounter(RX_SPI_INSTANCE);;
+    addBootlogEvent6(BOOT_EVENT_NRF_DETECTION, BOOT_EVENT_FLAGS_NONE, 0, (uint16_t)(RX_SPI_INSTANCE == SPI1), spiErrorCounter, 0);
 }
 
 void cx10Nrf24Init(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
