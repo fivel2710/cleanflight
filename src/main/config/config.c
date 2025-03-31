@@ -450,7 +450,7 @@ static void resetConf(void)
     masterConfig.gyroConfig.gyroMovementCalibrationThreshold = 32;
 
     masterConfig.mag_hardware = MAG_DEFAULT;     // default/autodetect
-    masterConfig.baro_hardware = BARO_DEFAULT;   // default/autodetect
+    masterConfig.baro_hardware = BARO_BMP280;   // default/autodetect
 
     resetBatteryConfig(&masterConfig.batteryConfig);
 

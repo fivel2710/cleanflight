@@ -548,11 +548,11 @@ else ifeq ($(TARGET),$(filter $(TARGET),$(F1_TARGETS)))
 TARGET_SRC := $(STM32F10x_COMMON_SRC) $(TARGET_SRC)
 endif
 
-ifneq ($(filter ONBOARDFLASH,$(FEATURES)),)
-TARGET_SRC += \
-            drivers/flash_m25p16.c \
-            io/flashfs.c
-endif
+#ifneq ($(filter ONBOARDFLASH,$(FEATURES)),)
+#TARGET_SRC += \
+#            drivers/flash_m25p16.c \
+#            io/flashfs.c
+#endif
 
 ifeq ($(TARGET),$(filter $(TARGET),$(F4_TARGETS) $(F3_TARGETS)))
 TARGET_SRC += $(HIGHEND_SRC)

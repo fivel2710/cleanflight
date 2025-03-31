@@ -25,10 +25,6 @@
 
 #undef BEEPER
 
-#define BARO_XCLR_PIN           PC13
-#define BARO_EOC_PIN            PC14
-#define BARO_APB2_PERIPHERALS   RCC_APB2Periph_GPIOC
-
 #define INVERTER                PB2 // PB2 (BOOT1) abused as inverter select GPIO
 #define INVERTER_USART          USART2
 
@@ -38,18 +34,6 @@
 //#define USE_MAG_DATA_READY_SIGNAL
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
 //#define DEBUG_MAG_DATA_READY_INTERRUPT
-
-// SPI1
-// PA7 SPI1_MOSI
-// PA6 SPI1_MISO
-// PA5 SPI1_SCK
-// P SPI1_NSS - not used
-
-
-#define NAZE_SPI_INSTANCE       SPI1
-#define NAZE_SPI_CS_GPIO        GPIOB
-#define NAZE_SPI_CS_PIN         PB1
-#define NAZE_CS_GPIO_CLK_PERIPHERAL RCC_APB2Periph_GPIOA
 
 // We either have this 16mbit flash chip on SPI or the MPU6500 acc/gyro depending on board revision:
 #define M25P16_CS_GPIO          NAZE_SPI_CS_GPIO
@@ -61,8 +45,8 @@
 #define MPU6500_CS_PIN                  NAZE_SPI_CS_PIN
 #define MPU6500_SPI_INSTANCE            NAZE_SPI_INSTANCE
 
-#define USE_FLASHFS
-#define USE_FLASH_M25P16
+//#define USE_FLASHFS
+//#define USE_FLASH_M25P16
 
 #define GYRO
 //#define USE_GYRO_MPU3050
@@ -84,7 +68,6 @@
 //#define ACC_MPU6500_ALIGN       CW0_DEG
 
 #define BARO
-
 #define USE_BARO_BMP280
 
 //#define MAG

@@ -25,6 +25,7 @@
 #include <platform.h>
 #include "build/build_config.h"
 
+#include "drivers/logging.h"
 
 #ifdef USE_RX_CX10
 
@@ -86,14 +87,14 @@ STATIC_UNIT_TESTED protocol_state_t protocolState;
 static uint8_t payloadSize;
 #define ACK_TO_SEND_COUNT 8
 
-#define CRC_LEN 2
+//#define CRC_LEN 2
 #define RX_TX_ADDR_LEN     5
 //STATIC_UNIT_TESTED uint8_t txAddr[RX_TX_ADDR_LEN] = {0x55, 0x0F, 0x71, 0x0C, 0x00}; // converted XN297 address, 0xC710F55 (28 bit)
 STATIC_UNIT_TESTED uint8_t rxAddr[RX_TX_ADDR_LEN] = {0x71, 0xCD, 0xAB, 0xCD, 0xAB}; // converted XN297 address
-#define TX_ID_LEN 4
+//#define TX_ID_LEN 4
 //STATIC_UNIT_TESTED uint8_t txId[TX_ID_LEN];
 
-#define CX10_RF_BIND_CHANNEL           0x02
+#define CX10_RF_BIND_CHANNEL           0x0
 #define RF_CHANNEL_COUNT 1
 STATIC_UNIT_TESTED uint8_t cx10RfChannelIndex = 0;
 STATIC_UNIT_TESTED uint8_t cx10RfChannels[RF_CHANNEL_COUNT]; // channels are set using txId from bind packet
@@ -160,7 +161,7 @@ static void cx10HopToNextChannel(void)
     if (cx10RfChannelIndex >= RF_CHANNEL_COUNT) {
         cx10RfChannelIndex = 0;
     }
-    NRF24L01_SetChannel(cx10RfChannels[cx10RfChannelIndex]);
+    NRF24L01_SetChannel(0/* cx10RfChannels[cx10RfChannelIndex] */);
 }
 
 // The hopping channels are determined by the txId
@@ -294,6 +295,8 @@ static void cx10Nrf24Setup(rx_spi_protocol_e protocol)
     NRF24L01_WriteReg(NRF24L01_11_RX_PW_P0, payloadSize /* + CRC_LEN */); // payload + 2 bytes CRC
 
     NRF24L01_SetRxMode(); // enter receive mode to start listening for packets
+
+    addBootlogEvent2(BOOT_EVENT_NRF_DETECTION, BOOT_EVENT_FLAGS_NONE);
 }
 
 void cx10Nrf24Init(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
