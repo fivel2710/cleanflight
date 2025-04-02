@@ -37,7 +37,7 @@
 // debug build flags
 //#define DEBUG_NRF24_INAV
 //#define NO_RF_CHANNEL_HOPPING
-//#define USE_BIND_ADDRESS_FOR_DATA_STATE
+#define USE_BIND_ADDRESS_FOR_DATA_STATE
 
 
 #define USE_AUTO_ACKKNOWLEDGEMENT
@@ -130,7 +130,7 @@ uint8_t receivedPowerSnapshot;
 
 #define RX_TX_ADDR_LEN 5
 // set rxTxAddr to the bind address
-STATIC_UNIT_TESTED uint8_t rxTxAddr[RX_TX_ADDR_LEN] = {0x4b,0x5c,0x6d,0x7e,0x8f};
+STATIC_UNIT_TESTED uint8_t rxTxAddr[RX_TX_ADDR_LEN] = {0xa4,0x93,0x82,0x71,0xD2};
 uint32_t *rxSpiIdPtr;
 #define RX_TX_ADDR_4 0xD2 // rxTxAddr[4] always set to this value
 
