@@ -41,7 +41,7 @@
 
 
 #define USE_AUTO_ACKKNOWLEDGEMENT
-#define USE_WHITENING
+//#define USE_WHITENING
 
 /*
  * iNav Protocol
